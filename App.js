@@ -1,16 +1,53 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { FontAwesome } from '@expo/vector-icons';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Recording from './components/Recording';
+import NoRecordings from './components/NoRecordings';
 
 export default function App() {
   const [recording, setRecording] = useState();
+  const [recordings, setRecordings] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
   const intervalRef = useRef(null);
+
+  useEffect( () => {
+    // const getData = async () => {
+    //   const recordings = await AsyncStorage.getItem('recordings');
+    //   const parsedRecordings = recordings ? JSON.parse(recordings) : [];
+    //   setRecordings(parsedRecordings);
+    //   console.log(parsedRecordings);
+    // }
+    // getData();
+  }, [recording]);
+
+  // async function saveAsyncStorageRecordingsToFirebase() {
+  //   try {
+  //     const recordings = await AsyncStorage.getItem('recordings');
+  //     const parsedRecordings = recordings ? JSON.parse(recordings) : [];
+  //     await saveRecordingsToFirebase(parsedRecordings);
+  //     console.log('Saved recordings from AsyncStorage to Firebase successfully');
+  //   } catch (error) {
+  //     console.error('Failed to save recordings from AsyncStorage to Firebase:', error);
+  //   }
+  // }
+
+  async function saveRecordingToAsyncStorage(recordingObject) {
+    try {
+      const recordings = await AsyncStorage.getItem('recordings');
+      const parsedRecordings = recordings ? JSON.parse(recordings) : [];
+      parsedRecordings.push(recordingObject);
+      await AsyncStorage.setItem('recordings', JSON.stringify(parsedRecordings));
+      console.log('Recording saved to AsyncStorage successfully');
+    } catch (error) {
+      console.error('Failed to save recording to AsyncStorage:', error);
+    }
+  }
+
 
   async function startRecording() {
     try {
@@ -41,6 +78,25 @@ export default function App() {
 
     try {
       await recording.stopAndUnloadAsync();
+      const today = new Date();
+
+      //
+      // Fetch the audio data from the URI
+
+      // const response = await fetch(recording.getURI());
+      // console.log(response);
+      // const blob = await response.json();
+      // console.log(blob);
+
+      const recordingObject = {
+        title: `Recording ${recordings.length + 1}`,
+        date: `${today.getDay()}-${today.getMonth()}-${today.getFullYear()}`,
+        duration: convertSecondsToMinutes(timer),
+        file: recording.getURI(),
+      };
+      await saveRecordingToAsyncStorage(recordingObject);
+      setRecordings(prevRecordings => {return [ recordingObject, ...prevRecordings]})
+      console.log(recordingObject);
     } catch (error) {
       console.error('Failed to stop recording:', error);
     }
@@ -50,41 +106,35 @@ export default function App() {
     setTimer(0);
   }
 
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <TouchableOpacity
-      onPress={isRecording ? stopRecording : startRecording}
-      style={{
-        padding: 20,
-        backgroundColor: isRecording ? 'red' : 'green',
-        borderRadius: 10,
-      }}
-    >
-      <Text style={{ color: 'white' }}>{isRecording ? 'Stop' : 'Start'} Recording</Text>
-    </TouchableOpacity>
-    <Text style={{ marginTop: 20 }}>{timer} seconds</Text>
-  </View>
+  function convertSecondsToMinutes(seconds) {
+    var minutes = Math.floor(seconds / 60);
+    var remainingSeconds = seconds % 60;
+
+    return minutes + ':' + (remainingSeconds < 10 ? '0' : '') + remainingSeconds;
+  }
+
 
   return (
     <View style={styles.container}>
 
       <View style={styles.innerContainer}>
         <View style={styles.headerContainer}>
-          <Text style={styles.timer}>{timer}</Text>
+          <Text style={[styles.timer, { color: isRecording ? '#ffffff' : '#b2b1b1' }]}>{convertSecondsToMinutes(timer)}</Text>
         </View>
 
         <View style={styles.recordContainer}>
           <TouchableOpacity
             onPress={isRecording ? stopRecording : startRecording}
-            
+
           >
             <View style={styles.recordButtonContainer}>
               <View style={styles.recordButton}>
                 <Text style={styles.recordButtonText}>
                   {
-                    isRecording ? 
-                    (<FontAwesome name="microphone-slash" size={52} color="white" />)
-                    :
-                    (<FontAwesome name="microphone" size={52} color="white" />)
+                    isRecording ?
+                      (<FontAwesome name="microphone-slash" size={52} color="white" />)
+                      :
+                      (<FontAwesome name="microphone" size={52} color="white" />)
                   }
                 </Text>
               </View>
@@ -94,11 +144,19 @@ export default function App() {
         </View>
 
         <View style={styles.recordingsContainer}>
-          <Recording />
+          {
+            recordings.length > 0 ?
+              <FlatList
+                data={recordings}
+                renderItem={({ item }) => <Recording recording={item}/>}
+              // keyExtractor={item => item.id}
+              />
+              :
+              <NoRecordings />
+          }
+
         </View>
-
       </View>
-
 
     </View>
   );
@@ -132,7 +190,7 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontSize: 48,
-    color: '#b2b1b1'
+    fontWeight: '700',
   },
   recordContainer: {
     flex: 1,
@@ -147,15 +205,15 @@ const styles = StyleSheet.create({
     borderColor: '#b2b1b1',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#b2b1b1',
-    shadowOffset: {
-      width: 1,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 5.00,
+    // shadowColor: '#b2b1b1',
+    // shadowOffset: {
+    //   width: 1,
+    //   height: 1,
+    // },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 5.00,
 
-    elevation: 12,
+    // elevation: 12,
   },
   recordButton: {
     width: 150,
@@ -168,13 +226,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: 'rgb(246,32,69)',
     shadowOffset: {
-      width: 4,
-      height: 0,
+      width: 2,
+      height: 2,
     },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.9,
     shadowRadius: 16.00,
 
-    elevation: 24,
+    elevation: 12,
   },
   recordButtonText: {
     fontSize: 28,
