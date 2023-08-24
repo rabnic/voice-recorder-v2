@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Recording from './components/Recording';
 import NoRecordings from './components/NoRecordings';
+import { uploadToFirebaseStorage } from './firebaseDB';
 
 export default function App() {
   const [recording, setRecording] = useState();
@@ -82,10 +83,9 @@ export default function App() {
 
       //
       // Fetch the audio data from the URI
-
       // const response = await fetch(recording.getURI());
       // console.log(response);
-      // const blob = await response.json();
+      // const blob = await response.blob();
       // console.log(blob);
 
       const recordingObject = {
@@ -94,9 +94,17 @@ export default function App() {
         duration: convertSecondsToMinutes(timer),
         file: recording.getURI(),
       };
+      console.log('uri', recording.getURI());
       await saveRecordingToAsyncStorage(recordingObject);
-      setRecordings(prevRecordings => {return [ recordingObject, ...prevRecordings]})
-      console.log(recordingObject);
+
+      uploadToFirebaseStorage(recordingObject).then((response)=> {
+        console.log('response', response);
+        // recordingObject.file = response
+        setRecordings(prevRecordings => {return [ recordingObject, ...prevRecordings]})
+      }).catch((error) => {
+        console.log(error);
+      });
+      // console.log('----',recordingObject);
     } catch (error) {
       console.error('Failed to stop recording:', error);
     }
@@ -125,7 +133,6 @@ export default function App() {
         <View style={styles.recordContainer}>
           <TouchableOpacity
             onPress={isRecording ? stopRecording : startRecording}
-
           >
             <View style={styles.recordButtonContainer}>
               <View style={styles.recordButton}>
@@ -200,7 +207,7 @@ const styles = StyleSheet.create({
   recordButtonContainer: {
     width: 250,
     height: 250,
-    borderRadius: 150,
+    borderRadius: 250/2,
     borderWidth: 1,
     borderColor: '#b2b1b1',
     justifyContent: 'center',
@@ -218,7 +225,7 @@ const styles = StyleSheet.create({
   recordButton: {
     width: 150,
     height: 150,
-    borderRadius: 150,
+    borderRadius: 150/2,
 
     backgroundColor: 'rgb(246,32,69)',
     shadowColor: 'rgb(246,32,69)',

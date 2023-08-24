@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Modal, Pressable } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Entypo } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,26 +6,27 @@ import { Audio } from 'expo-av';
 
 const Recording = ({ recording }) => {
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
     const [audioUri, setAudioUri] = useState(recording.file);
     const [sound, setSound] = React.useState();
-    console.log(recording);
+    // console.log(recording);
 
     useEffect(() => {
         return sound
-          ? () => {
-              console.log('Unloading Sound');
-              
-              sound.unloadAsync();
+            ? () => {
+                console.log('Unloading Sound');
+
+                sound.unloadAsync();
             }
-          : undefined;
-      }, [sound]);
+            : undefined;
+    }, [sound]);
 
     const play = async () => {
         setIsPlaying(true)
         console.log('Loading Sound');
         // if(!sound) {
-            const { sound } = await Audio.Sound.createAsync({uri:audioUri});
-            setSound(sound);
+        const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
+        setSound(sound);
         // }
 
         console.log('Playing Sound');
@@ -33,7 +34,7 @@ const Recording = ({ recording }) => {
     }
     const pause = async () => {
         console.log('Pausing Sound');
-        
+
         sound && await sound.pauseAsync();
         // sound && await sound.unloadAsync();
         console.log(sound);
@@ -57,8 +58,29 @@ const Recording = ({ recording }) => {
                 <Text style={styles.durationAndDate}>{`${recording.duration}   ${recording.date}`}</Text>
             </View>
             <View style={styles.recordingActionsContainer}>
-                <Entypo name="dots-three-vertical" size={24} color="#b2b1b1" />
+                <Pressable onPress={() => setIsModalVisible(true)}>
+                    <Entypo name="dots-three-vertical" size={24} color="#b2b1b1" />
+                </Pressable>
             </View>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={isModalVisible}
+                onRequestClose={() => {
+                    Alert.alert('Modal has been closed.');
+                    setIsModalVisible(!modalVisible);
+                }}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>Hello World!</Text>
+                        <Pressable
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setIsModalVisible(!isModalVisible)}>
+                            <Text style={styles.textStyle}>Hide Modal</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
         </View>
     )
 }
@@ -86,5 +108,46 @@ const styles = StyleSheet.create({
     },
     durationAndDate: {
         color: '#aaaaaa',
-    }
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 22,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    button: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+      },
+      buttonOpen: {
+        backgroundColor: '#F194FF',
+      },
+      buttonClose: {
+        backgroundColor: '#2196F3',
+      },
+      textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+      },
+      modalText: {
+        marginBottom: 15,
+        textAlign: 'center',
+      },
 })
