@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -20,14 +20,13 @@ const firebaseConfig = {
   projectId: "voice-recorder-84355",
   storageBucket: "voice-recorder-84355.appspot.com",
   messagingSenderId: "823767307506",
-  appId: "1:823767307506:web:5f2b93939e7b1b296dec6b"
+  appId: "1:823767307506:web:5f2b93939e7b1b296dec6b",
 };
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
-
 
 // const imageRef = ref(storage, 'recordings/' + file.name);
 // uploadBytesResumable(imageRef, file, metadata)
@@ -46,39 +45,44 @@ const storage = getStorage(app);
 
 export const uploadToFirebaseStorage = async (recording) => {
   try {
-    console.log('start upload to firebase storage');
+    console.log("start upload to firebase storage");
     // console.log(recording);
     // const response = await fetch(recording.file);
     // if (!response.ok) {
     //   throw new Error('Network response was not ok');
     // }
-    console.log('file', recording.file);
+    console.log("file", recording.file);
+    let fileType = "";
+    const blob = await fetchAudioFile(recording.file)
+      .then((audioFile) => {
+        console.log("i have audio", audioFile);
+        const uriParts = recording.file.split(".");
+        fileType = uriParts[uriParts.length - 1];
 
-    const blob = await fetchAudioFile(recording.file).then((audioFile) => {
-      console.log('i have blob', audioFile);
-      return audioFile;
-    }).catch((error) => {
-      console.log('error', error);
-    });
+        return audioFile;
+      })
+      .catch((error) => {
+        console.log("error", error);
+      });
 
-    console.log('blob', blob);
+    console.log("blob", blob);
 
     if (blob) {
-      const storageRef = ref(storage, `user1/${recording.title}.mp3`);
-      await uploadBytes(storageRef, blob);
+      const storageRef = ref(storage, `user1/${recording.title}.${fileType}`);
+      await uploadBytes(storageRef, blob, { contentType: `audio/${fileType}` });
       // await storageRef.put(blob);
       const downloadUrl = await getDownloadURL(storageRef);
-      console.log('Recording uploaded to Firebase Storage.');
+      console.log("Recording uploaded to Firebase Storage.");
       // console.log(downloadUrl);
       return downloadUrl;
     }
   } catch (error) {
-    console.error('Error uploading recording to Firebase:', error);
+    console.error("Error uploading recording to Firebase:", error);
   }
 };
 
 const fetchAudioFile = (uri) => {
-  console.log('inside fetchAudioFile');
+  console.log("inside fetchAudioFile");
   return new Promise((resolve, reject) => {
     // const request = new XMLHttpRequest();
     // request.responseType = 'blob';
@@ -102,8 +106,8 @@ const fetchAudioFile = (uri) => {
     // request.send();
     ////////////////////////////////////////////////////////////////
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', uri, true);
-    xhr.responseType = 'blob';
+    xhr.open("GET", uri, true);
+    xhr.responseType = "blob";
 
     xhr.onload = () => {
       // console.log('status =', xhr.status);
@@ -116,10 +120,9 @@ const fetchAudioFile = (uri) => {
     };
 
     xhr.onerror = () => {
-      reject(new Error('Network error'));
+      reject(new Error("Network error"));
     };
 
-    xhr.send();
-
+    xhr.send(null);
   });
 };
