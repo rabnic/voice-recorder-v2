@@ -14,7 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Recording from "./components/Recording";
 import NoRecordings from "./components/NoRecordings";
-import { uploadToFirebaseStorage } from "./firebaseDB";
+import { getAllData, uploadToFirebaseStorage, uploadToFirestore } from "./firebaseDB";
 
 export default function App() {
   const [recording, setRecording] = useState();
@@ -24,14 +24,19 @@ export default function App() {
   const intervalRef = useRef(null);
 
   useEffect(() => {
-    // const getData = async () => {
-    //   const recordings = await AsyncStorage.getItem('recordings');
-    //   const parsedRecordings = recordings ? JSON.parse(recordings) : [];
-    //   setRecordings(parsedRecordings);
-    //   console.log(parsedRecordings);
-    // }
-    // getData();
-  }, [recording]);
+    const fetchData = async () => {
+      // Access Firestore collection and fetch data
+      getAllData()
+      .then((data) => {
+          console.log(data);
+          setRecordings(data)
+       }).catch((error) => { 
+        console.log(error); 
+      })
+    };
+
+    fetchData();
+  }, []);
 
   // async function saveAsyncStorageRecordingsToFirebase() {
   //   try {
@@ -62,6 +67,10 @@ export default function App() {
       linearPCMBitDepth: 16,
       linearPCMIsBigEndian: false,
       linearPCMIsFloat: false,
+    },
+    web: {
+      mimeType: 'audio/webm',
+      bitsPerSecond: 128000,
     },
   };
   async function saveRecordingToAsyncStorage(recordingObject) {
@@ -106,17 +115,9 @@ export default function App() {
 
   async function stopRecording() {
     clearInterval(intervalRef.current);
-
     try {
       await recording.stopAndUnloadAsync();
       const today = new Date();
-
-      //
-      // Fetch the audio data from the URI
-      // const response = await fetch(recording.getURI());
-      // console.log(response);
-      // const blob = await response.blob();
-      // console.log(blob);
 
       const recordingObject = {
         title: `Recording ${recordings.length + 1}`,
@@ -131,9 +132,15 @@ export default function App() {
         .then((response) => {
           console.log("response", response);
           // recordingObject.file = response
-          setRecordings((prevRecordings) => {
-            return [recordingObject, ...prevRecordings];
-          });
+          uploadToFirestore({ ...recordingObject, file: response })
+            .then((docId) => {
+              setRecordings((prevRecordings) => {
+                return [{ ...recordingObject, id: docId }, ...prevRecordings];
+              });
+
+            }).catch((err) => {
+              console.log("error adding doc", err);
+            })
         })
         .catch((error) => {
           console.log(error);
@@ -197,8 +204,8 @@ export default function App() {
           {recordings.length > 0 ? (
             <FlatList
               data={recordings}
-              renderItem={({ item }) => <Recording recording={item} />}
-              // keyExtractor={item => item.id}
+              renderItem={({ item }) => <Recording recording={item} setRecordings={setRecordings}/>}
+            // keyExtractor={item => item.id}
             />
           ) : (
             <NoRecordings />

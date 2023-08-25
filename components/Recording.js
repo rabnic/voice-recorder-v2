@@ -1,14 +1,18 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Modal, Pressable } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Modal, Pressable, TextInput } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Entypo } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { deleteRecording, updateRecording } from '../firebaseDB';
 
-const Recording = ({ recording }) => {
+const Recording = ({ recording, setRecordings }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [audioUri, setAudioUri] = useState(recording.file);
     const [sound, setSound] = React.useState();
+    const [titleChangeText, setTitleChangeText] = useState('')
+    const [recordingId, setRecordingId] = useState()
     // console.log(recording);
 
     useEffect(() => {
@@ -23,7 +27,7 @@ const Recording = ({ recording }) => {
 
     const play = async () => {
         setIsPlaying(true)
-        console.log('Loading Sound');
+        console.log('Loading Sound', audioUri);
         // if(!sound) {
         const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
         setSound(sound);
@@ -41,6 +45,24 @@ const Recording = ({ recording }) => {
         setIsPlaying(false)
         // setSound(null);
     }
+    const handleDelete = (recordingId) => {
+        setRecordings(prevRecordings => {
+            return prevRecordings.filter(record => record.id !== recordingId)
+        })
+        deleteRecording(recordingId);
+        setIsModalVisible(!isModalVisible)
+    };
+
+    const handleUpdate = () => {
+        console.log(titleChangeText);
+        setRecordings(prevRecordings => {
+            return prevRecordings.map(record => {
+                return record.id === recordingId ? { ...record, title: titleChangeText } : record
+            })
+        })
+        updateRecording(recordingId,titleChangeText );
+        setIsModalVisible(!isModalVisible)
+    };
     return (
         <View style={styles.recordingContainer}>
             <View style={styles.playButtonContainer}>
@@ -58,7 +80,7 @@ const Recording = ({ recording }) => {
                 <Text style={styles.durationAndDate}>{`${recording.duration}   ${recording.date}`}</Text>
             </View>
             <View style={styles.recordingActionsContainer}>
-                <Pressable onPress={() => setIsModalVisible(true)}>
+                <Pressable onPress={() => { setTitleChangeText(recording.title); setRecordingId(recording.id); setIsModalVisible(true) }}>
                     <Entypo name="dots-three-vertical" size={24} color="#b2b1b1" />
                 </Pressable>
             </View>
@@ -68,16 +90,40 @@ const Recording = ({ recording }) => {
                 visible={isModalVisible}
                 onRequestClose={() => {
                     Alert.alert('Modal has been closed.');
-                    setIsModalVisible(!modalVisible);
+                    setIsModalVisible(!isModalVisible);
                 }}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalText}>Hello World!</Text>
+                        {/* <Text style={styles.modalText}>Hello World!</Text> */}
                         <Pressable
-                            style={[styles.button, styles.buttonClose]}
                             onPress={() => setIsModalVisible(!isModalVisible)}>
-                            <Text style={styles.textStyle}>Hide Modal</Text>
+                            <Ionicons name="ios-close-outline" size={34} color="#cccccc" style={styles.buttonClose} />
                         </Pressable>
+                        <TextInput
+                            style={styles.inputTitleText}
+                            onChangeText={(text) => setTitleChangeText(text)}
+                            value={titleChangeText}
+                        />
+                        <View style={styles.modalButtonsContainer}>
+                            <Pressable
+                                onPress={() => handleDelete(recording.id)}>
+                                <View style={[styles.button, styles.buttonDelete]}>
+                                    <Text style={styles.textStyle}>
+                                        <AntDesign name="delete" size={18} color="#555555" style={{marginRight: 5}}/>
+                                        Delete
+                                    </Text>
+                                </View>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => handleUpdate()}>
+                                <View style={[styles.button, styles.buttonUpdate]}>
+                                    <Text style={styles.textStyle}>
+                                        <AntDesign name="edit" size={18} color="#555555" style={{marginRight: 5}}/>
+                                        Update
+                                    </Text>
+                                </View>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -117,10 +163,12 @@ const styles = StyleSheet.create({
     },
     modalView: {
         margin: 20,
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 35,
-        alignItems: 'center',
+        height: 180,
+        width: 250,
+        backgroundColor: 'rgb(51,50,51)',
+        borderRadius: 5,
+        padding: 10,
+        justifyContent: 'space-between',
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
@@ -131,23 +179,42 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     button: {
-        borderRadius: 20,
-        padding: 10,
+        borderRadius: 2,
+        paddingHorizontal: 20,
+        paddingVertical: 5,
         elevation: 2,
-      },
-      buttonOpen: {
-        backgroundColor: '#F194FF',
-      },
-      buttonClose: {
-        backgroundColor: '#2196F3',
-      },
-      textStyle: {
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    buttonDelete: {     
+        backgroundColor: '#ce2029',
+    },
+    buttonUpdate: {
+        backgroundColor: '#187bcd',
+        width: '100%'
+    },
+    buttonClose: {
+        alignSelf: 'flex-end',
+    },
+    textStyle: {
         color: 'white',
-        fontWeight: 'bold',
+        fontWeight: '400',
         textAlign: 'center',
-      },
-      modalText: {
-        marginBottom: 15,
-        textAlign: 'center',
-      },
+        fontSize: 16,
+    },
+    inputTitleText: {
+        height: 40,
+        width: '100%',
+        paddingLeft: 10,
+        marginHorizontal: 'auto',
+        borderWidth: 1,
+        borderColor: '#555555',
+        color: '#eeeeee',
+    },
+    modalButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        color: 'white',
+    }
 })

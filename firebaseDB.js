@@ -1,17 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, deleteDoc, addDoc, getDocs, collection } from "firebase/firestore";
 
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
-// Optionally import the services that you want to use
-// import {...} from "firebase/auth";
-// import {...} from "firebase/database";
-// import {...} from "firebase/firestore";
-// import {...} from "firebase/functions";
-
-// Import the functions you need from the SDKs you need
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -28,30 +18,43 @@ export const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// const imageRef = ref(storage, 'recordings/' + file.name);
-// uploadBytesResumable(imageRef, file, metadata)
-//   .then((snapshot) => {
-//     console.log('Uploaded', snapshot.totalBytes, 'bytes.');
-//     console.log('File metadata:', snapshot.metadata);
-//     // Let's get a download URL for the file.
-//     getDownloadURL(snapshot.ref).then((url) => {
-//       console.log('File available at', url);
-//       // ...
-//     });
-//   }).catch((error) => {
-//     console.error('Upload failed', error);
-//     // ...
-//   });
+export const getAllData = async () => {
+  try {
+    const recordingsRef = collection(db,'user1-recordings');
+    const response = await getDocs(recordingsRef);
+    const data = []
+    response.forEach((recordingData) => {
+      data.push({ ...recordingData.data(), id: recordingData.id });
+    })
+   return data; 
+} catch (error) {
+    console.log(error.message);
+}
+};
+
+export const deleteRecording = async (id) => {
+  return await deleteDoc(doc(db, "user1-recordings", id));
+};
+
+export const updateRecording = async (id, newTitle) => {
+  return await updateDoc(doc(db, "user1-recordings", id),{title: newTitle});
+}
+
+export const uploadToFirestore = async (recording) => {
+  try {
+    const addedDoc = await addDoc(collection(db,'user1-recordings'), recording);
+    console.log('Added doc: ' + addedDoc.id);
+    return  addedDoc.id;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 export const uploadToFirebaseStorage = async (recording) => {
   try {
     console.log("start upload to firebase storage");
-    // console.log(recording);
-    // const response = await fetch(recording.file);
-    // if (!response.ok) {
-    //   throw new Error('Network response was not ok');
-    // }
-    console.log("file", recording.file);
+
+    console.log("file", typeof recording.file);
     let fileType = "";
     const blob = await fetchAudioFile(recording.file)
       .then((audioFile) => {
@@ -68,12 +71,10 @@ export const uploadToFirebaseStorage = async (recording) => {
     console.log("blob", blob);
 
     if (blob) {
-      const storageRef = ref(storage, `user1/${recording.title}.${fileType}`);
-      await uploadBytes(storageRef, blob, { contentType: `audio/${fileType}` });
-      // await storageRef.put(blob);
+      const storageRef = ref(storage, `user1/${recording.title}.${recording.file.includes('blob') ? 'webm':fileType}`);
+      await uploadBytes(storageRef, blob, { contentType: `audio/${recording.file.includes('blob') ? 'webm':fileType}` });
       const downloadUrl = await getDownloadURL(storageRef);
       console.log("Recording uploaded to Firebase Storage.");
-      // console.log(downloadUrl);
       return downloadUrl;
     }
   } catch (error) {
@@ -84,27 +85,6 @@ export const uploadToFirebaseStorage = async (recording) => {
 const fetchAudioFile = (uri) => {
   console.log("inside fetchAudioFile");
   return new Promise((resolve, reject) => {
-    // const request = new XMLHttpRequest();
-    // request.responseType = 'blob';
-    // request.onreadystatechange = e => {
-    //   console.log('inside onready');
-    //   console.log(e);
-    //   if (request.readyState !== 4) {
-    //     return;
-    //   }
-
-    //   // if (request.status === 200 || request.status === 0) {
-    //     console.log('success', request.response);
-    //     resolve(request.response);
-    //   // } else {
-    //   //   // console.warn('error');
-    //   //   reject(request.responseText);
-    //   // }
-    // };
-
-    // request.open('GET', uri);
-    // request.send();
-    ////////////////////////////////////////////////////////////////
     const xhr = new XMLHttpRequest();
     xhr.open("GET", uri, true);
     xhr.responseType = "blob";
