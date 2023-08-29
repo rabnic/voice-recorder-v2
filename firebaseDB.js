@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, updateDoc, deleteDoc, addDoc, getDocs, collection } from "firebase/firestore";
-
+import {getAuth, createUserWithEmailAndPassword} from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -17,6 +17,23 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const auth = getAuth(app);
+
+export const signUpWithEmailAndPassword = async (fullName,email, password) => {
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in 
+      userCredential.updateProfile({
+        displayName: fullName,
+    })}).then((profile) => {
+      console.log(profile);
+      console.log('User signed in successfully');
+    })
+    .catch((error) => {
+      console.log(error);
+      // ..
+    });
+}
 
 export const getAllData = async () => {
   try {
@@ -106,3 +123,5 @@ const fetchAudioFile = (uri) => {
     xhr.send(null);
   });
 };
+
+
