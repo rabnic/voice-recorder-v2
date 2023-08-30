@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
@@ -12,20 +12,42 @@ import {
   FlatList,
   useWindowDimensions,
 } from "react-native";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAllData, uploadToFirebaseStorage, uploadToFirestore } from "./firebaseDB";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAllData, uploadToFirebaseStorage, uploadToFirestore, auth, getUser, signOutUser } from "./firebaseDB";
 import HomeScreen from "./screens/HomeScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import LoginScreen from "./screens/LoginScreen";
 
 export default function App() {
   const { width, height } = useWindowDimensions();
-  const [recording, setRecording] = useState();
-  const [recordings, setRecordings] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const intervalRef = useRef(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      await AsyncStorage.getItem('user')
+      .then((localUser) => {
+        user = user || JSON.parse(localUser);
+        console.log('App.js',user);
+        signOutUser();
+      });
+      
+      if (user) {
+        await getUser(user.email)
+          .then((userData) => {
+            setUser(userData);
+            console.log('User in', userData);
+          })
+          .catch((error) => {
+            console.log(error);
+          })
+      } else {
+        console.log('User not in', user);
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [])
 
   const Stack = createNativeStackNavigator();
 
@@ -47,7 +69,7 @@ export default function App() {
         animated={true}
         style={'light'}
       />
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer theme={navTheme} screenProps={{user: user}}>
         {/* <HomeScreen /> */}
         {/* <RegisterScreen /> */}
         {/* <LoginScreen /> */}
@@ -56,7 +78,7 @@ export default function App() {
           animation: 'slide_from_bottom',
         }}>
           <Stack.Screen name="Home">
-            {(props) => <HomeScreen {...props} extraData={'someData'} />}
+            {(props) => <HomeScreen {...props} extraData={user} />}
           </Stack.Screen>
           <Stack.Screen name="Login" >
             {(props) => <LoginScreen {...props} extraData={'someData'} />}

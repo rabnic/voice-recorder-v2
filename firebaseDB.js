@@ -1,7 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, updateDoc, deleteDoc, addDoc, getDocs, collection } from "firebase/firestore";
-import {getAuth, createUserWithEmailAndPassword} from "firebase/auth";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, addDoc, getDocs, collection, initializeFirestore, getDoc } from "firebase/firestore";
+import {getAuth,updateProfile ,createUserWithEmailAndPassword, signInWithEmailAndPassword, initializeAuth, getReactNativePersistence, signOut} from "firebase/auth";
+// import { getReactNativePersistence } from "firebase/auth/react-native"
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,29 +17,82 @@ const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
+// const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
-const auth = getAuth(app);
+// const auth = getAuth(app);
+export const auth = getAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+})
 
-export const signUpWithEmailAndPassword = async (fullName,email, password) => {
+export const signUpWithEmailAndPassword = async (email, password) => {
   createUserWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
       // Signed in 
-      userCredential.updateProfile({
-        displayName: fullName,
-    })}).then((profile) => {
-      console.log(profile);
+      const { user } = userCredential;
+      return user;
+
+    }).then(async (user) => {
+      // console.log('user==',user);
       console.log('User signed in successfully');
     })
     .catch((error) => {
       console.log(error);
-      // ..
     });
 }
 
-export const getAllData = async () => {
+export const signInUserWithEmailAndPassword = async (email,password) => {
+  signInUserWithEmailAndPassword(email, password)
+  .then( async (userCredential) => {
+    const {user} = userCredential;
+    // await AsyncStorage.setItem('user', JSON.stringify(user));
+    console.log('User signed in:', user.email);
+  }).catch((error) => {
+    console.log(error);
+  })
+} 
+
+export const signOutUser = async () => {
+  signOut(auth)
+    .then( async () => {
+      await AsyncStorage.removeItem('user');
+      console.log("Sign-out successful.");
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+// dribble, awwwards, mobbing, framer, ux toast ================================
+export const registerUser = async (user) => {
   try {
-    const recordingsRef = collection(db,'user1-recordings');
+    // Add a new document in collection "users"
+    console.log('trying to register', user.email)
+    await setDoc(doc(db, 'users', user.email), user)
+    .then( async () => {
+      await AsyncStorage.setItem('user', JSON.stringify({email: user.email}));
+      console.log("User registered");
+    });
+  } catch (e) {
+    console.error("Error adding user document: ", e);
+  }
+}
+
+export const getUser = async (email) => {
+  const userDocRef = doc(db, 'users', email);
+  const docSnap = await getDoc(userDocRef);
+  if (docSnap.exists()) {
+    // console.log("Document data:", docSnap.data());
+    return docSnap.data();
+  } else {
+    console.log("No such document!");
+    return null;
+  }
+};
+
+export const getAllData = async (userEmail) => {
+  try {
+    const docRef = doc(db, 'users', userEmail);
+    const recordingsRef = collection(db,'recordings');
     const response = await getDocs(recordingsRef);
     const data = []
     response.forEach((recordingData) => {
@@ -53,13 +108,17 @@ export const deleteRecording = async (id) => {
   return await deleteDoc(doc(db, "user1-recordings", id));
 };
 
-export const updateRecording = async (id, newTitle) => {
+export const updateRecording = async (id, userEmail, newTitle) => {
   return await updateDoc(doc(db, "user1-recordings", id),{title: newTitle});
 }
 
-export const uploadToFirestore = async (recording) => {
+export const uploadToFirestore = async (userEmail, recording) => {
   try {
-    const addedDoc = await addDoc(collection(db,'user1-recordings'), recording);
+    const docRef = doc(db, 'users', userEmail);
+    const collectionRef = collection(docRef, 'recordings');
+    const addedDoc = await addDoc(collectionRef, recording);
+
+    // const addedDoc = await addDoc(collection(db,'user1-recordings'), recording);
     console.log('Added doc: ' + addedDoc.id);
     return  addedDoc.id;
   } catch (error) {
@@ -67,7 +126,7 @@ export const uploadToFirestore = async (recording) => {
   }
 };
 
-export const uploadToFirebaseStorage = async (recording) => {
+export const uploadToFirebaseStorage = async (userEmail, recording) => {
   try {
     console.log("start upload to firebase storage");
 
@@ -88,7 +147,7 @@ export const uploadToFirebaseStorage = async (recording) => {
     console.log("blob", blob);
 
     if (blob) {
-      const storageRef = ref(storage, `user1/${recording.title}.${recording.file.includes('blob') ? 'webm':fileType}`);
+      const storageRef = ref(storage, `${userEmail}/${recording.title}.${recording.file.includes('blob') ? 'webm':fileType}`);
       await uploadBytes(storageRef, blob, { contentType: `audio/${recording.file.includes('blob') ? 'webm':fileType}` });
       const downloadUrl = await getDownloadURL(storageRef);
       console.log("Recording uploaded to Firebase Storage.");

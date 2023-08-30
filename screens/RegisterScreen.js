@@ -13,7 +13,7 @@ import {
     TextInput,
     Pressable,
 } from "react-native";
-import { signUpWithEmailAndPassword } from "../firebaseDB";
+import { registerUser, signUpWithEmailAndPassword } from "../firebaseDB";
 
 export default function RegisterScreen({ navigation }) {
     const [fullName, setFullName] = useState('');
@@ -21,7 +21,14 @@ export default function RegisterScreen({ navigation }) {
     const [password, setPassword] = useState('');
 
     const handleSignUp = () => {
-        signUpWithEmailAndPassword(fullName,email,password);
+        signUpWithEmailAndPassword(email,password)
+        .then(() => {
+            registerUser({fullName, email})
+            .then(() => {
+                console.log('Registered yahaaaaaa')
+                navigation.navigate('Home');
+            });
+        });
     }
 
     return (
@@ -57,7 +64,7 @@ export default function RegisterScreen({ navigation }) {
                             setPassword(text);
                         }} inputMode="text"/>
                     </View>
-                    <Pressable style={styles.registerButton} onPress={() => { }}>
+                    <Pressable style={styles.registerButton} onPress={ handleSignUp }>
                         <Text style={styles.registerButtonText}>Sign Up</Text>
                     </Pressable>
                 </View>

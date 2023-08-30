@@ -7,6 +7,7 @@ import {
   View,
   TouchableOpacity,
   FlatList,
+  Button
 } from "react-native";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,25 +16,27 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Recording from "../components/Recording";
 // import NoRecordings from "../components/NoRecordings";
 import NoRecordings from "../components/NoRecordings";
-import { getAllData, uploadToFirebaseStorage, uploadToFirestore } from "../firebaseDB";
+import { getAllData, signOutUser, uploadToFirebaseStorage, uploadToFirestore } from "../firebaseDB";
 
-export default function HomeScreen() {
+export default function HomeScreen(props) {
   const [recording, setRecording] = useState();
   const [recordings, setRecordings] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
   const intervalRef = useRef(null);
+  console.log('route props', props.extraData)
 
   useEffect(() => {
     const fetchData = async () => {
       // Access Firestore collection and fetch data
-      getAllData()
-      .then((data) => {
-          console.log(data);
-          setRecordings(data)
-       }).catch((error) => { 
-        console.log(error); 
-      })
+    //   getAllData()
+    //   .then((data) => {
+    //       console.log(data);
+    //       setRecordings(data)
+    //    }).catch((error) => { 
+    //     console.log(error); 
+    //   })
+    // console.log('route props', props)
     };
 
     fetchData();
@@ -52,16 +55,16 @@ export default function HomeScreen() {
   const recordingSettings = {
     android: {
       extension: ".m4a",
-      outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-      audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
+      outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+      audioEncoder: Audio.AndroidAudioEncoder.AAC,
       sampleRate: 44100,
       numberOfChannels: 2,
       bitRate: 128000,
     },
     ios: {
       extension: ".m4a",
-      outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
-      audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MIN,
+      outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+      audioQuality: Audio.IOSAudioQuality.MIN,
       sampleRate: 44100,
       numberOfChannels: 2,
       bitRate: 128000,
@@ -165,6 +168,14 @@ export default function HomeScreen() {
     );
   }
 
+  const handleSignOut = () => {
+    signOutUser().then(() => {
+        console.log("Sign out");
+        props.navigation.navigate('Login');
+
+    })
+  }
+
   return (
     
       <View style={styles.innerContainer}>
@@ -177,6 +188,7 @@ export default function HomeScreen() {
           >
             {convertSecondsToMinutes(timer)}
           </Text>
+          <Button title="Sign Out" onPress={handleSignOut} />
         </View>
 
         <View style={styles.recordContainer}>
@@ -227,6 +239,8 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginHorizontal: 20,
     paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   timer: {
     fontSize: 48,
