@@ -6,7 +6,7 @@ import { AntDesign } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { deleteRecording, updateRecording } from '../firebaseDB';
 
-const Recording = ({ recording, setRecordings }) => {
+const Recording = ({ recording, setRecordings, userEmail }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [audioUri, setAudioUri] = useState(recording.file);
@@ -49,7 +49,7 @@ const Recording = ({ recording, setRecordings }) => {
         setRecordings(prevRecordings => {
             return prevRecordings.filter(record => record.id !== recordingId)
         })
-        deleteRecording(recordingId);
+        deleteRecording(userEmail, recordingId);
         setIsModalVisible(!isModalVisible)
     };
 
@@ -60,7 +60,7 @@ const Recording = ({ recording, setRecordings }) => {
                 return record.id === recordingId ? { ...record, title: titleChangeText } : record
             })
         })
-        updateRecording(recordingId,titleChangeText );
+        updateRecording(recordingId,userEmail,titleChangeText );
         setIsModalVisible(!isModalVisible)
     };
     return (
@@ -131,7 +131,7 @@ const Recording = ({ recording, setRecordings }) => {
     )
 }
 
-export default Recording
+export default Recording;
 
 const styles = StyleSheet.create({
     recordingContainer: {

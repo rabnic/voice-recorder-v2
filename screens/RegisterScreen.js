@@ -21,13 +21,13 @@ export default function RegisterScreen({ navigation }) {
     const [password, setPassword] = useState('');
 
     const handleSignUp = () => {
-        signUpWithEmailAndPassword(email,password)
-        .then(() => {
-            registerUser({fullName, email})
+        signUpWithEmailAndPassword(email.toLowerCase().trim(),password)
+        .then( async() => {
+            await registerUser({fullName, email: email.toLowerCase().trim()})
             .then(() => {
                 console.log('Registered yahaaaaaa')
-                navigation.navigate('Home');
             });
+            navigation.navigate('Home');
         });
     }
 

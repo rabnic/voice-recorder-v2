@@ -27,9 +27,9 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       await AsyncStorage.getItem('user')
       .then((localUser) => {
-        user = user || JSON.parse(localUser);
-        console.log('App.js',user);
-        signOutUser();
+        // user = user || JSON.parse(localUser);
+        console.log('App.js Async',JSON.parse(localUser));
+        // signOutUser(); 
       });
       
       if (user) {
@@ -42,7 +42,7 @@ export default function App() {
             console.log(error);
           })
       } else {
-        console.log('User not in', user);
+        console.log('No user logged in ==================================');
         setUser(null);
       }
     });
@@ -70,22 +70,19 @@ export default function App() {
         style={'light'}
       />
       <NavigationContainer theme={navTheme} screenProps={{user: user}}>
-        {/* <HomeScreen /> */}
-        {/* <RegisterScreen /> */}
-        {/* <LoginScreen /> */}
-        <Stack.Navigator initialRouteName="Register" screenOptions={{
+        <Stack.Navigator initialRouteName="Home" screenOptions={{
           headerShown: false,
           animation: 'slide_from_bottom',
         }}>
           <Stack.Screen name="Home">
-            {(props) => <HomeScreen {...props} extraData={user} />}
+            {(props) => user !== null ? <HomeScreen {...props} extraData={user} /> : <LoginScreen {...props} />}
           </Stack.Screen>
           <Stack.Screen name="Login" >
-            {(props) => <LoginScreen {...props} extraData={'someData'} />}
+            {(props) => user === null ? <LoginScreen {...props} /> : <HomeScreen {...props} extraData={user} />}
 
           </Stack.Screen>
           <Stack.Screen name="Register"  >
-            {(props) => <RegisterScreen {...props} extraData={'someData'} />}
+            {(props) => user === null ? <RegisterScreen {...props} /> : <HomeScreen {...props} extraData={user} />}
 
           </Stack.Screen>
         </Stack.Navigator>

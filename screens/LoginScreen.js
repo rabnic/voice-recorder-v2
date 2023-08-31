@@ -9,14 +9,28 @@ import {
     View,
     Image,
     Pressable,
-    TextInput
+    TextInput,
+    ActivityIndicator
 } from "react-native";
 import FacebookLogo from '../assets/facebook.png';
 import GoogleLogo from '../assets/google.png';
-
-
+import { signInUserWithEmailAndPassword } from "../firebaseDB";
 
 export default function LoginScreen({ navigation }) {
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSignIn = async() => {
+        setIsLoading(true);
+        await signInUserWithEmailAndPassword(email.toLowerCase().trim(),password)
+        .then(() => {
+            
+        }).finally(() => {
+            // setIsLoading(false);
+        });
+    }
 
     return (
         <View style={styles.innerContainer}>
@@ -34,14 +48,15 @@ export default function LoginScreen({ navigation }) {
                 <View style={styles.innerFormContainer}>
                     <View style={styles.textInputContainer}>
                         <AntDesign name="mail" size={24} color="black" />
-                        <TextInput style={styles.textInput} placeholder="Email" />
+                        <TextInput style={styles.textInput} placeholder="Email" value={email} onChangeText={(text) => setEmail(text)}/>
                     </View>
                     <View style={styles.textInputContainer}>
                         <AntDesign name="lock1" size={24} color="black" />
-                        <TextInput style={styles.textInput} placeholder="Password" />
+                        <TextInput style={styles.textInput} placeholder="Password" value={password} onChangeText={(text) => setPassword(text)}/>
                     </View>
-                    <Pressable style={styles.registerButton} onPress={() => { }}>
-                        <Text style={styles.registerButtonText}>Sign In</Text>
+                    <Pressable style={styles.registerButton} onPress={() => {setIsLoading(true), handleSignIn()}}>
+                        <Text style={styles.registerButtonText}>Sign In </Text>
+                        { isLoading && <ActivityIndicator style={styles.loader} />}
                     </Pressable>
                 </View>
                 <View style={styles.thirdpartyContainer}>
@@ -49,17 +64,14 @@ export default function LoginScreen({ navigation }) {
                         <View style={styles.hr}></View>
                         <TextInput style={styles.orSignUpWithText}> Or Sign In With</TextInput>
                         <View style={styles.hr}></View>
-
                     </View>
                     <View style={styles.thirdpartyButtons}>
                         <Pressable style={styles.thirdpartyButton} onPress={() => { }}>
                         <Image source={FacebookLogo} style={styles.thirdPartyLogo} />
-
                             <Text style={styles.thirdpartyButtonText}>Facebook</Text>
                         </Pressable>
                         <Pressable style={styles.thirdpartyButton} onPress={() => { }}>
                         <Image source={GoogleLogo} style={styles.thirdPartyLogo} />
-
                             <Text style={styles.thirdpartyButtonText}>Google</Text>
                         </Pressable>
                     </View>
@@ -138,20 +150,20 @@ const styles = StyleSheet.create({
         fontSize: 24,
     },
     registerButton: {
-        height: 55,
-        borderRadius: 50,
-
-    },
-    registerButton: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 12,
         paddingHorizontal: 32,
         borderRadius: 50,
         height: 55,
+        alignItems: 'center',
         marginTop: 10,
         elevation: 3,
         backgroundColor: '#222222',
+    },
+    loader: {
+        position: 'absolute',
+        right: 30,
     },
     registerButtonText: {
         fontSize: 16,
