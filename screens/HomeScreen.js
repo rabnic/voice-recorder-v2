@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { FontAwesome } from "@expo/vector-icons";
+import { AntDesign } from '@expo/vector-icons';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   FlatList,
-  Button
+  ActivityIndicator,
 } from "react-native";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -23,20 +24,21 @@ export default function HomeScreen(props) {
   const [recordings, setRecordings] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [user, setUser] = useState(props.extraData)
   const intervalRef = useRef(null);
-  console.log('route props', props.extraData)
+//   console.log('route props', props.extraData)
 
   useEffect(() => {
     const fetchData = async () => {
       // Access Firestore collection and fetch data
-    //   getAllData()
-    //   .then((data) => {
-    //       console.log(data);
-    //       setRecordings(data)
-    //    }).catch((error) => { 
-    //     console.log(error); 
-    //   })
-    // console.log('route props', props)
+      getAllData(user.email)
+      .then((data) => {
+        //   console.log('data',data);
+          setRecordings(data)
+       }).catch((error) => { 
+        console.log(error); 
+      })
+    // console.log('route props', user)
     };
 
     fetchData();
@@ -86,7 +88,7 @@ export default function HomeScreen(props) {
         "recordings",
         JSON.stringify(parsedRecordings)
       );
-      console.log("Recording saved to AsyncStorage successfully");
+    //   console.log("Recording saved to AsyncStorage successfully");
     } catch (error) {
       console.error("Failed to save recording to AsyncStorage:", error);
     }
@@ -129,14 +131,14 @@ export default function HomeScreen(props) {
         duration: convertSecondsToMinutes(timer),
         file: recording.getURI(),
       };
-      console.log("uri", recording.getURI());
+    //   console.log("uri", recording.getURI());
       await saveRecordingToAsyncStorage(recordingObject);
 
-      uploadToFirebaseStorage(recordingObject)
-        .then((response) => {
-          console.log("response", response);
+      await uploadToFirebaseStorage(user.email,recordingObject)
+        .then( async (response) => {
+        //   console.log("response", response);
           // recordingObject.file = response
-          uploadToFirestore({ ...recordingObject, file: response })
+          await uploadToFirestore(user.email,{ ...recordingObject, file: response })
             .then((docId) => {
               setRecordings((prevRecordings) => {
                 return [{ ...recordingObject, id: docId }, ...prevRecordings];
@@ -171,6 +173,8 @@ export default function HomeScreen(props) {
   const handleSignOut = () => {
     signOutUser().then(() => {
         console.log("Sign out");
+        setRecordings(null);
+        setUser(null)
         props.navigation.navigate('Login');
 
     })
@@ -188,7 +192,10 @@ export default function HomeScreen(props) {
           >
             {convertSecondsToMinutes(timer)}
           </Text>
-          <Button title="Sign Out" onPress={handleSignOut} />
+          {/* <Button title="Sign Out" onPress={handleSignOut} /> */}
+          <TouchableOpacity onPress={handleSignOut}>
+          <AntDesign name="logout" size={26} color="#E94A47" style={{position: 'relative', top: -5, right: 10,}}/>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.recordContainer}>
@@ -211,15 +218,22 @@ export default function HomeScreen(props) {
               </View>
             </View>
           </TouchableOpacity>
+          {/* <Text>uploading to cloud ... <ActivityIndicator color="#50CAB2"/></Text> */}
         </View>
 
         <View style={styles.recordingsContainer}>
-          {recordings.length > 0 ? (
-            <FlatList
-              data={recordings}
-              renderItem={({ item }) => <Recording recording={item} setRecordings={setRecordings}/>}
-            // keyExtractor={item => item.id}
-            />
+          {recordings && recordings.length > 0 ? (
+            // <FlatList
+            //   data={recordings}
+            //   keyExtractor={(item, index) => `key-${index}`}
+              
+            //   renderItem={({ item }) => <Recording recording={item} setRecordings={setRecordings} userEmail={user.email}/>}
+            // />
+            
+                recordings.map((item) => {
+                    return (<Recording recording={item} key={item.id} setRecordings={setRecordings} userEmail={user.email}/>)
+                })
+            
           ) : (
             <NoRecordings />
           )}

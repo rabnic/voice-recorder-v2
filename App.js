@@ -25,11 +25,32 @@ import LoginScreen from "./screens/LoginScreen";
 
 export default function App() {
   const { width, height } = useWindowDimensions();
-  const [recording, setRecording] = useState();
-  const [recordings, setRecordings] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const intervalRef = useRef(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      await AsyncStorage.getItem("user").then((localUser) => {
+        user = user || JSON.parse(localUser);
+        console.log("App.js", user);
+        signOutUser();
+      });
+
+      if (user) {
+        await getUser(user.email)
+          .then((userData) => {
+            setUser(userData);
+            console.log("User in", userData);
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      } else {
+        console.log("User not in", user);
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const Stack = createNativeStackNavigator();
 
@@ -50,16 +71,19 @@ export default function App() {
       }}
     >
       <StatusBar animated={true} style={"light"} />
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer theme={navTheme} screenProps={{ user: user }}>
+        {/* <HomeScreen /> */}
+        {/* <RegisterScreen /> */}
+        {/* <LoginScreen /> */}
         <Stack.Navigator
-          initialRouteName="Login"
+          initialRouteName="Register"
           screenOptions={{
             headerShown: false,
             animation: "slide_from_bottom",
           }}
         >
           <Stack.Screen name="Home">
-            {(props) => <HomeScreen {...props} extraData={"someData"} />}
+            {(props) => <HomeScreen {...props} extraData={user} />}
           </Stack.Screen>
           <Stack.Screen name="Login">
             {(props) => <LoginScreen {...props} extraData={"someData"} />}

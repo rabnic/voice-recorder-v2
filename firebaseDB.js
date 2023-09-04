@@ -27,28 +27,24 @@ export const auth = getAuth(app, {
 
 export const signUpWithEmailAndPassword = async (email, password) => {
   createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Signed in 
-      const { user } = userCredential;
-      return user;
-
-    }).then(async (user) => {
-      // console.log('user==',user);
+    .then(() => {
       console.log('User signed in successfully');
     })
     .catch((error) => {
-      console.log(error);
+      console.log('SignIn Error =',error);
     });
 }
 
 export const signInUserWithEmailAndPassword = async (email,password) => {
-  signInUserWithEmailAndPassword(email, password)
+  signInWithEmailAndPassword(auth,email, password)
   .then( async (userCredential) => {
     const {user} = userCredential;
-    // await AsyncStorage.setItem('user', JSON.stringify(user));
     console.log('User signed in:', user.email);
+    await getUser(user.email).then((userData) => {
+        console.log('User data:', userData);
+    })
   }).catch((error) => {
-    console.log(error);
+    console.log('Could not sign in',error);
   })
 } 
 
@@ -69,8 +65,10 @@ export const registerUser = async (user) => {
     console.log('trying to register', user.email)
     await setDoc(doc(db, 'users', user.email), user)
     .then( async () => {
-      await AsyncStorage.setItem('user', JSON.stringify({email: user.email}));
       console.log("User registered");
+      await AsyncStorage.setItem('user', JSON.stringify({email: user.email}));
+    }).catch((error) => {
+      console.log(error);
     });
   } catch (e) {
     console.error("Error adding user document: ", e);
@@ -91,11 +89,14 @@ export const getUser = async (email) => {
 
 export const getAllData = async (userEmail) => {
   try {
+    // console.log('trying to get all',userEmail)
     const docRef = doc(db, 'users', userEmail);
-    const recordingsRef = collection(db,'recordings');
+    const recordingsRef = collection(docRef,'recordings');
     const response = await getDocs(recordingsRef);
+    // console.log('response', response);
     const data = []
     response.forEach((recordingData) => {
+      // console.log('----',{ ...recordingData.data(), id: recordingData.id })
       data.push({ ...recordingData.data(), id: recordingData.id });
     })
    return data; 
@@ -104,22 +105,25 @@ export const getAllData = async (userEmail) => {
 }
 };
 
-export const deleteRecording = async (id) => {
-  return await deleteDoc(doc(db, "user1-recordings", id));
+export const deleteRecording = async (userEmail, id) => {
+  const docRef = doc(db, 'users', userEmail);
+  return await deleteDoc(doc(docRef, "recordings", id));
 };
 
 export const updateRecording = async (id, userEmail, newTitle) => {
-  return await updateDoc(doc(db, "user1-recordings", id),{title: newTitle});
+  const docRef = doc(db, 'users', userEmail);
+  return await updateDoc(doc(docRef, "recordings", id),{title: newTitle});
 }
 
 export const uploadToFirestore = async (userEmail, recording) => {
   try {
+    // console.log(userEmail, recording)
     const docRef = doc(db, 'users', userEmail);
     const collectionRef = collection(docRef, 'recordings');
     const addedDoc = await addDoc(collectionRef, recording);
 
     // const addedDoc = await addDoc(collection(db,'user1-recordings'), recording);
-    console.log('Added doc: ' + addedDoc.id);
+    // console.log('Added doc: ' + addedDoc.id);
     return  addedDoc.id;
   } catch (error) {
     console.log(error);
@@ -128,13 +132,13 @@ export const uploadToFirestore = async (userEmail, recording) => {
 
 export const uploadToFirebaseStorage = async (userEmail, recording) => {
   try {
-    console.log("start upload to firebase storage");
+    // console.log("start upload to firebase storage");
 
-    console.log("file", typeof recording.file);
+    // console.log("file", typeof recording.file);
     let fileType = "";
     const blob = await fetchAudioFile(recording.file)
       .then((audioFile) => {
-        console.log("i have audio", audioFile);
+        // console.log("i have audio", audioFile);
         const uriParts = recording.file.split(".");
         fileType = uriParts[uriParts.length - 1];
 
@@ -144,17 +148,17 @@ export const uploadToFirebaseStorage = async (userEmail, recording) => {
         console.log("error", error);
       });
 
-    console.log("blob", blob);
+    // console.log("blob", blob);
 
     if (blob) {
       const storageRef = ref(storage, `${userEmail}/${recording.title}.${recording.file.includes('blob') ? 'webm':fileType}`);
       await uploadBytes(storageRef, blob, { contentType: `audio/${recording.file.includes('blob') ? 'webm':fileType}` });
       const downloadUrl = await getDownloadURL(storageRef);
-      console.log("Recording uploaded to Firebase Storage.");
+      // console.log("Recording uploaded to Firebase Storage.");
       return downloadUrl;
     }
   } catch (error) {
-    console.error("Error uploading recording to Firebase:", error);
+    // console.error("Error uploading recording to Firebase:", error);
   }
 };
 
