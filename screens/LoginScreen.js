@@ -52,17 +52,18 @@ export default function LoginScreen({ navigation }) {
                     </View>
                     <View style={styles.textInputContainer}>
                         <AntDesign name="lock1" size={24} color="black" />
-                        <TextInput style={styles.textInput} placeholder="Password" value={password} onChangeText={(text) => setPassword(text)}/>
+                        <TextInput style={styles.textInput} placeholder="Password" value={password} onChangeText={(text) => setPassword(text)} secureTextEntry={false}/>
                     </View>
                     <Pressable style={styles.registerButton} onPress={() => {setIsLoading(true), handleSignIn()}}>
                         <Text style={styles.registerButtonText}>Sign In </Text>
                         { isLoading && <ActivityIndicator style={styles.loader} />}
                     </Pressable>
                 </View>
+                
                 <View style={styles.thirdpartyContainer}>
                     <View style={styles.orSignUpWithContainer}>
                         <View style={styles.hr}></View>
-                        <TextInput style={styles.orSignUpWithText}> Or Sign In With</TextInput>
+                        <Text style={styles.orSignUpWithText}> Or Sign In With</Text>
                         <View style={styles.hr}></View>
                     </View>
                     <View style={styles.thirdpartyButtons}>
@@ -148,6 +149,7 @@ const styles = StyleSheet.create({
     textInput: {
         flex: 1,
         fontSize: 24,
+        backgroundColor: 'transparent'
     },
     registerButton: {
         alignItems: 'center',
@@ -197,6 +199,7 @@ const styles = StyleSheet.create({
         borderColor: '#222222',
         opacity: .4,
         height: 0,
+        width: '100%',
     },
     thirdpartyButtons: {
         flexDirection: 'row',
@@ -233,8 +236,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '500',
         color: '#333333',
-
-
     },
     textAlreadyUserLink: {
         marginLeft: 5,

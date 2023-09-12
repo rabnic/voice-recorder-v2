@@ -62,7 +62,7 @@ export default function RegisterScreen({ navigation }) {
                         <AntDesign name="lock1" size={24} color="black" />
                         <TextInput style={styles.textInput} placeholder="Password" value={password} onChangeText={(text) =>{
                             setPassword(text);
-                        }} inputMode="text"/>
+                        }} inputMode="text" secureTextEntry={true}/>
                     </View>
                     <Pressable style={styles.registerButton} onPress={ handleSignUp }>
                         <Text style={styles.registerButtonText}>Sign Up</Text>
@@ -71,7 +71,7 @@ export default function RegisterScreen({ navigation }) {
                 <View style={styles.thirdpartyContainer}>
                     <View style={styles.orSignUpWithContainer}>
                         <View style={styles.hr}></View>
-                        <TextInput style={styles.orSignUpWithText}> Or Sign Up With</TextInput>
+                        <Text style={styles.orSignUpWithText}> Or Sign Up With</Text>
                         <View style={styles.hr}></View>
 
                     </View>

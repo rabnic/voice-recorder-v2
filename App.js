@@ -77,6 +77,8 @@ export default function App() {
           <Stack.Screen name="Home">
             {(props) => user !== null ? <HomeScreen {...props} extraData={user} /> : <LoginScreen {...props} />}
           </Stack.Screen>
+
+          
           <Stack.Screen name="Login" >
             {(props) => user === null ? <LoginScreen {...props} /> : <HomeScreen {...props} extraData={user} />}
 

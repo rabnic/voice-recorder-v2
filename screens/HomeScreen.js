@@ -8,6 +8,7 @@ import {
   View,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   ActivityIndicator,
 } from "react-native";
 import { Audio } from "expo-av";
@@ -23,6 +24,7 @@ export default function HomeScreen(props) {
   const [recording, setRecording] = useState();
   const [recordings, setRecordings] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [user, setUser] = useState(props.extraData)
   const intervalRef = useRef(null);
@@ -120,6 +122,7 @@ export default function HomeScreen(props) {
   }
 
   async function stopRecording() {
+    setIsLoading(true);
     clearInterval(intervalRef.current);
     try {
       await recording.stopAndUnloadAsync();
@@ -159,6 +162,7 @@ export default function HomeScreen(props) {
     setRecording(undefined);
     setIsRecording(false);
     setTimer(0);
+    setIsLoading(false);
   }
 
   function convertSecondsToMinutes(seconds) {
@@ -212,7 +216,7 @@ export default function HomeScreen(props) {
                       color="white"
                     />
                   ) : (
-                    <FontAwesome name="microphone" size={52} color="white" />
+                    isLoading ? <ActivityIndicator size="large"/> :<FontAwesome name="microphone" size={52} color="white" />
                   )}
                 </Text>
               </View>
@@ -221,7 +225,7 @@ export default function HomeScreen(props) {
           {/* <Text>uploading to cloud ... <ActivityIndicator color="#50CAB2"/></Text> */}
         </View>
 
-        <View style={styles.recordingsContainer}>
+        <ScrollView style={styles.recordingsContainer}>
           {recordings && recordings.length > 0 ? (
             // <FlatList
             //   data={recordings}
@@ -237,7 +241,7 @@ export default function HomeScreen(props) {
           ) : (
             <NoRecordings />
           )}
-        </View>
+        </ScrollView>
       </View>
   );
 }

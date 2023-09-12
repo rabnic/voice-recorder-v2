@@ -22,7 +22,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 // const auth = getAuth(app);
 export const auth = getAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
+  // persistence: getReactNativePersistence(AsyncStorage),
 })
 
 export const signUpWithEmailAndPassword = async (email, password) => {

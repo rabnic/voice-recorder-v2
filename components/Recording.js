@@ -36,10 +36,10 @@ const Recording = ({ recording, setRecordings, userEmail }) => {
         console.log('Playing Sound');
         await sound.playAsync();
     }
-    const pause = async () => {
-        console.log('Pausing Sound');
+    const stop = async () => {
+        console.log('Stopping Sound');
 
-        sound && await sound.pauseAsync();
+        sound && await sound.stopAsync();
         // sound && await sound.unloadAsync();
         console.log(sound);
         setIsPlaying(false)
@@ -66,10 +66,10 @@ const Recording = ({ recording, setRecordings, userEmail }) => {
     return (
         <View style={styles.recordingContainer}>
             <View style={styles.playButtonContainer}>
-                <TouchableOpacity onPress={isPlaying ? pause : play}>
+                <TouchableOpacity onPress={isPlaying ? stop : play}>
                     {
                         isPlaying ?
-                            <Ionicons name="pause-circle-outline" size={44} color="#b2b1b1" />
+                            <Ionicons name="stop-circle-outline" size={44} color="#b2b1b1" />
                             :
                             <Ionicons name="play-circle-outline" size={44} color="#b2b1b1" />
                     }
